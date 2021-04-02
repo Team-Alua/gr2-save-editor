@@ -6,7 +6,6 @@ import system
 import segfaults
 import ./save/types
 import ./save/readers
-import ./save/search
 import "./mod/writers"
 from "./mod/types" as ModTypes import GRModOption, GRMod, GRModKind
 from "./mod/edits" as ModEdits import newEdits, newOutFitEdits
@@ -17,16 +16,20 @@ from "./mod/edits" as ModEdits import newEdits, newOutFitEdits
 # -g, --max-gems
 # -s, --skin
 
+proc write(o: FileStream, i: MemStream): void =
+    i.setPosition(0)
+    while not i.atEnd:
+        o.write(i.read(byte))
 
-
-
-
+proc write(o: var seq[byte], i: FileStream): void =
+    i.setPosition(0)
+    while not i.atEnd:
+        o.add(i.read(byte))
 
 var saveFile = newFileStream("data0001.bin", bigEndian , fmRead)
 
 var buffer: seq[byte] = newSeq[byte]()
-while not saveFile.atEnd:
-    buffer.add(saveFile.read(byte))
+buffer.write(saveFile)
 saveFile.close()
 
 var saveFileMem = newMemStream(buffer, bigEndian)
@@ -41,6 +44,7 @@ for edit in edits:
     saveFileMem.write(edit, sections)
 
 var outfits: seq[GRMod] = newOutFitEdits(opts)
+
 for outfit in outfits:
     if outfit.kind != GRModKind.String:
         continue
@@ -50,12 +54,7 @@ for outfit in outfits:
     fileName.add(".bin")
     saveFileMem.write(outfit, sections)
     var fs = newFileStream(fileName, bigEndian , fmWrite)
-    saveFileMem.setPosition(0)
-    while not saveFileMem.atEnd:
-        fs.write(saveFileMem.read(byte))
+    fs.write(saveFileMem)
     fs.close()
-    
 
-        
-    
 saveFileMem.close()
