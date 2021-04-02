@@ -17,9 +17,8 @@ from "./mod/edits" as ModEdits import newEdits, newOutFitEdits
 # -s, --skin
 
 
-# var arr: array[2000000, byte]
-# system.zeroMem(arr.addr, 2000000)
-# arr[0] = 0b1
+import sequtils
+
 proc write(o: FileStream, i: MemStream, size: int64): void =
     var buffer: array[512, byte]
     var index: int64 = 0
@@ -33,13 +32,24 @@ proc write(o: FileStream, i: MemStream, size: int64): void =
         o.write(buffer, 0, rwSize)
         index += rwSize
 
-proc write(o: var seq[byte], i: FileStream): void =
-    i.setPosition(0)
-    while not i.atEnd:
-        o.add(i.read(byte))
+#    proc write(o: var seq[byte], i: FileStream): void =
+#        i.setPosition(0)
+#        while not i.atEnd:
+#            o.add(i.read(byte))
+#
+#    var saveFile = newFileStream("data0001.bin", bigEndian , fmRead)
 
-var saveFile = newFileStream("data0001.bin", bigEndian , fmRead)
-
+proc write(o: var seq[byte], i: File): void =
+    var fileSize=  i.getFileSize()
+    var index: Natural = 0
+    var buffer: array[512, byte]
+    while index < fileSize:
+        var bytesRead: Natural = i.readBuffer(buffer.addr, cast[Natural](512))
+        o.add(buffer)
+        if bytesRead < 512:
+            o.delete(cast[Natural](index + bytesRead), cast[Natural](index + 512))
+        index += bytesRead
+var saveFile = open("data0001.bin", fmRead, 512)
 var buffer: seq[byte] = newSeq[byte]()
 
 buffer.write(saveFile)
