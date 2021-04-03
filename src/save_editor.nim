@@ -1,83 +1,75 @@
 # compile with --gc:arc to fix segfault
 
 # edit_list
+import strutils
+import os
 import binstreams
+import parseopt
 import system
 import segfaults
-import ./save/types
-import ./save/readers
-import "./mod/writers"
+import "./arg_parser"
+import "./save/types"
+import "./save/readers"
+import "./helpers/writers"
 from "./mod/types" as ModTypes import GRModOption, GRMod, GRModKind
 from "./mod/edits" as ModEdits import newEdits, newOutFitEdits
-# import parseopt
-# Copy to buffer to quickly modify in memory
-
-# -o, --online-items
-# -g, --max-gems
-# -s, --skin
+from "./mod/writers" as ModWriters import write
 
 
-import sequtils
 
-proc write(o: FileStream, i: MemStream, size: int64): void =
-    var buffer: array[512, byte]
-    var index: int64 = 0
-    while index < size:
-        i.setPosition(index)
-        o.setPosition(index)
-        var rwSize: int64 = 512
-        if (size - index) < 512:
-            rwSize = (size - index)
-        i.read(buffer, 0, rwSize)
-        o.write(buffer, 0, rwSize)
-        index += rwSize
+# parse arguments
+var args = initOptParser("", shortNoVal = {'o', 'g', 'c'},
+                              longNoVal = @["online-items", "max-gems"])
+var grModOpts = args.parseArgs
 
-#    proc write(o: var seq[byte], i: FileStream): void =
-#        i.setPosition(0)
-#        while not i.atEnd:
-#            o.add(i.read(byte))
-#
-#    var saveFile = newFileStream("data0001.bin", bigEndian , fmRead)
+if grModOpts.filename == "":
+    echo "Invalid file name supplied"
+    quit(-1)
 
-proc write(o: var seq[byte], i: File): void =
-    var fileSize=  i.getFileSize()
-    var index: Natural = 0
-    var buffer: array[512, byte]
-    while index < fileSize:
-        var bytesRead: Natural = i.readBuffer(buffer.addr, cast[Natural](512))
-        o.add(buffer)
-        if bytesRead < 512:
-            o.delete(cast[Natural](index + bytesRead), cast[Natural](index + 512))
-        index += bytesRead
-var saveFile = open("data0001.bin", fmRead, 512)
+# write file to sequence for quicker access
+var saveFile = open(grModOpts.filename, fmRead, 512)
 var buffer: seq[byte] = newSeq[byte]()
-
 buffer.write(saveFile)
 saveFile.close()
 
 var saveFileMem = newMemStream(buffer, bigEndian)
+
+# parse gravity rush 2 save file
 var sections: seq[GRDataType] 
 sections = saveFileMem.readGRSaveFile
 
-# var opts = GRModOption(maxGems:true,onlineItems: true, skins: @["kit19", "kit04", "cro01", "cro06", "sac01", "oth01", "tkg05"])
-var opts = GRModOption(skins: @["kit19", "kit04", "cro01", "cro06", "sac01", "oth01", "tkg05"])
-var edits: seq[GRMod] = newEdits(opts)
+# generate the necessary edits for non costume types
+var edits: seq[GRMod] = newEdits(grModOpts)
 
 for edit in edits:
     saveFileMem.write(edit, sections)
 
-var outfits: seq[GRMod] = newOutFitEdits(opts)
 
-for outfit in outfits:
-    if outfit.kind != GRModKind.String:
-        continue
-    var ofName = outfit.stringValue
-    var fileName = "data0001_"
-    fileName.add(ofName)
-    fileName.add(".bin")
-    saveFileMem.write(outfit, sections)
-    var fs = newFileStream(fileName, bigEndian , fmWrite)
+
+# generate necessary costume edits
+var outfits: seq[GRMod] = newOutFitEdits(grModOpts)
+proc appendToFileName(fileName: string, name: string): string =
+    let fileSplit = splitFile(fileName)
+    let newFileName = "$1_$2$3" % [fileSplit.name, name, fileSplit.ext]
+    joinPath(fileSplit.dir, newFileName)
+
+if len(outfits) == 0:
+    var fileName = grModOpts.filename.appendToFileName("modded")
+    echo "Writing to ", fileName
+    var fs = newFileStream(fileName, bigEndian, fmWrite)
     fs.write(saveFileMem, len(buffer))
     fs.close()
+    discard
+else:
+    for outfit in outfits:
+        if outfit.kind != GRModKind.String:
+            continue
+        var ofName = outfit.stringValue
+        var fileName = grModOpts.filename.appendToFileName(ofName)
+        echo "Writing to ", fileName
+        saveFileMem.write(outfit, sections)
+        var fs = newFileStream(fileName, bigEndian , fmWrite)
+        fs.write(saveFileMem, len(buffer))
+        fs.close()
 
 saveFileMem.close()

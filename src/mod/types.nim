@@ -17,6 +17,7 @@ type GRMod* = object
         stringValue*: string
 
 type GRModOption* = object
+    filename*: string
     onlineItems*: bool
     maxGems*: bool
-    skins*: seq[string]
+    costumes*: array[0..6, string]

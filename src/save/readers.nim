@@ -41,9 +41,13 @@ proc readGRList(f: MemStream, varName: GRVariable): GRDataType =
 proc readGRString(f: MemStream, varName: GRVariable, stringLoc: int64): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: String)
     var loc: int64 = f.getPosition
-    f.setPosition(stringLoc)
-    dataTypeInfo.location = stringLoc
-    dataTypeInfo.stringValue = f.readCString
+    if stringLoc == 0x0:
+        dataTypeInfo.location = stringLoc
+        dataTypeInfo.stringValue = ""
+    else:
+        f.setPosition(stringLoc)
+        dataTypeInfo.location = stringLoc
+        dataTypeInfo.stringValue = f.readCString
     f.setPosition(loc + 0x4)
     result = dataTypeInfo
 
@@ -65,27 +69,31 @@ proc readGRVector(f: MemStream, varName: GRVariable, vectorLoc: int64): GRDataTy
     f.setPosition(4, sspCur)
     result = dataTypeInfo
 
-
+import bitops
 proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
     var dataTypeInfo: GRDataType
     let varName: GRVariable = f.read(GRVariable)
-    let dataType: uint32 = f.read(uint32)
-    if dataType == 0x8: # List
+    let rawDataType: uint32 = f.read(uint32)
+    var dataType: uint32 = rawDataType
+    dataType.mask(0b111'u32)
+    if dataType == 0:
         dataTypeInfo = f.readGRList(varName)
-    elif dataType mod 0x10 == 0xB:
-        dataTypeInfo = f.readGRString(varName, cast[int64](dataType) shr 4)
+    elif dataType == 1:
+        dataTypeInfo = f.readGRFloat(varName)
+    elif dataType == 2:
+        dataTypeInfo = f.readGRVector(varName, cast[int64](rawDataType))
+    elif dataType == 3:
+        dataTypeInfo = f.readGRString(varName, cast[int64](rawDataType) shr 4)
         if varName.name == "playtime":
             echo "Playtime: ", dataTypeInfo.stringValue
-    elif dataType == 0x9:
-        dataTypeInfo = f.readGRFloat(varName)
-    elif dataType == 0xC:
+    elif dataType == 4:
         dataTypeInfo = f.readGRBool(varName)
-    elif f.peek(uint32) == 0x10:
-        dataTypeInfo = f.readGRVector(varName, cast[int64](dataType))
     else:
+        echo dataType
         var e: ref ValueError
         new e
-        e.msg = "Invalid type discovered!"
+        e.msg = "Invalid type discovered! "
+        e.msg.add(varName.name)
         raise e
         
     if dataTypeInfo.kind != List:

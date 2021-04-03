@@ -185,9 +185,11 @@ proc newMaxGemEdits*(modOptions: GRModOption): seq[GRMod] =
 
 proc newOutFitEdits*(modOptions: GRModOption): seq[GRMod] = 
     var edits: seq[GRMod] = newSeq[GRMod]()
-    for skin in modOptions.skins:
+    for costume in modOptions.costumes:
+        if costume == "":
+            continue
         var edit: GRMod = GRMod(targetPath: @["Player", "Costume"], kind: String)
-        edit.stringValue = skin
+        edit.stringValue = costume
         edits.add(edit)
     return edits
 
