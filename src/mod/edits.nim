@@ -182,6 +182,7 @@ proc newMaxGemEdits*(modOptions: GRModOption): seq[GRMod] =
     var edits: seq[GRMod] = newSeq[GRMod]()
     if modOptions.maxGems:
         edits.addMaxGems
+    return edits
 
 proc newOutFitEdits*(modOptions: GRModOption): seq[GRMod] = 
     var edits: seq[GRMod] = newSeq[GRMod]()
