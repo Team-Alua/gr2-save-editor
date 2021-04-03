@@ -1,5 +1,6 @@
 type GRVariable* = object
     name*: string
+    hash*: uint32 # uses fnv1a32
     location*: int64
 
 type GRDataKind* = enum 
@@ -30,10 +31,13 @@ type GRDataType* = object
     of String:
         stringValue*: string
     of Float:
+        floatValue*: float32
         discard
     of Boolean:
+        boolValue*: bool
         discard
     of Vector:
+        vectorValue*:array[4, float32]
         discard
     of Unknown:
         discard

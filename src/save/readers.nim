@@ -18,18 +18,18 @@ proc readCString(f: MemStream, length: uint32): string =
 
 proc read(f: MemStream, T: typedesc[GRVariable]): GRVariable =
     var varName = GRVariable()
-    var pos: int64 = f.getPosition()
     var nameOffset: uint32 = f.read(uint32)
+    let pos: int64 = f.getPosition()
     varName.location = cast[int64](nameOffset)
     f.setPosition(cast[int64](nameOffset))
     varName.name = f.readCString
     result = varName
-    f.setPosition(pos + 4)
+    f.setPosition(pos)
     
-proc readGRTable(f: MemStream, varName: GRVariable): GRDataType =
+proc readGRTable(f: MemStream, varName: var GRVariable): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: List)
     var count = f.read(uint32)
-    f.setPosition(4, sspCur)
+    dataTypeInfo.varName.hash = f.read(uint32)
     var items: seq[GRDataType] = newSeq[GRDataType]()
     var totalProcessed: uint32 = 1
     for index in 1..count:
@@ -42,21 +42,31 @@ proc readGRTable(f: MemStream, varName: GRVariable): GRDataType =
 
 
 proc readGRFloat(f: MemStream, varName: GRVariable): GRDataType =
-    var dataTypeInfo = GRDataType(varName: varName, kind: Float)
+    var dataTypeInfo = GRDataType(varName: varName, kind: Float, processed: 1)
     dataTypeInfo.location = f.getPosition
-    f.setPosition(4, sspCur)
+    dataTypeInfo.floatValue = f.read(float32)
+    dataTypeInfo.varName.hash = f.read(uint32)
     result = dataTypeInfo
 
+import system
 proc readGRVector(f: MemStream, varName: GRVariable, vectorLoc: int64): GRDataType =
-    var dataTypeInfo = GRDataType(varName: varName, kind: Vector)
+    var dataTypeInfo = GRDataType(varName: varName, kind: Vector, processed: 1)
     dataTypeInfo.location = vectorLoc
-    f.setPosition(4, sspCur)
+    let vectorSize = f.read(uint32)
+    dataTypeInfo.varName.hash = f.read(uint32)
+    let pos = f.getPosition() 
+    f.setPosition(vectorLoc)
+    let vectorCount = vectorSize.div(4)
+    for index in 1..vectorCount: 
+        dataTypeInfo.vectorValue[index - 1] = f.read(float32)
+    f.setPosition(pos)
     result = dataTypeInfo
 
 proc readGRString(f: MemStream, varName: GRVariable, stringLoc: int64): GRDataType =
-    var dataTypeInfo = GRDataType(varName: varName, kind: String)
-    var loc: int64 = f.getPosition
+    var dataTypeInfo = GRDataType(varName: varName, kind: String, processed: 1)
     var stringLength: uint32 = f.read(uint32)
+    dataTypeInfo.varName.hash = f.read(uint32)
+    var loc: int64 = f.getPosition
     if stringLoc == 0x0:
         dataTypeInfo.location = stringLoc
         dataTypeInfo.stringValue = ""
@@ -64,21 +74,22 @@ proc readGRString(f: MemStream, varName: GRVariable, stringLoc: int64): GRDataTy
         f.setPosition(stringLoc)
         dataTypeInfo.location = stringLoc
         dataTypeInfo.stringValue = f.readCString(stringLength)
-    f.setPosition(loc + 0x4)
+    f.setPosition(loc)
     result = dataTypeInfo
 
 proc readGRBool(f: MemStream, varName: GRVariable): GRDataType =
-    var dataTypeInfo = GRDataType(varName: varName, kind: Boolean)
+    var dataTypeInfo = GRDataType(varName: varName, kind: Boolean, processed: 1)
     dataTypeInfo.location = f.getPosition
-    f.setPosition(4, sspCur)
+    dataTypeInfo.boolValue = f.read(uint32) > 0
+    dataTypeInfo.varName.hash = f.read(uint32)
     result = dataTypeInfo
 
 import bitops
 proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
     var dataTypeInfo: GRDataType
-    let varName: GRVariable = f.read(GRVariable)
+    var varName: GRVariable = f.read(GRVariable)
     let rawDataType: uint32 = f.read(uint32) # 8
-    var dataType: uint32 = rawDataType 
+    var dataType: uint32 = rawDataType
     dataType.mask(0b111'u32)
     let dataLocation: int64 = cast[int64](rawDataType) shr 4
     if dataType == 0:
@@ -100,10 +111,6 @@ proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
         e.msg = "Invalid type discovered! "
         e.msg.add(varName.name)
         raise e
-        
-    if dataTypeInfo.kind != List:
-        dataTypeInfo.processed = 1
-        f.setPosition(4, sspCur)
     result = dataTypeInfo
 
 
