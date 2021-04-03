@@ -24,7 +24,7 @@ proc parseArgs*(p: var OptParser): GRModOption =
   for kind, key, val in p.getopt():
     case kind:
     of cmdArgument:
-      if match(key, re"data\d{4}\.bin$"):
+      if contains(key, re"data\d{4}\.bin$"):
         opts.filename = key
     of cmdLongOption, cmdShortOption:
       case key:
