@@ -12,6 +12,9 @@ proc readCString(f: MemStream): string =
         str.add(character)
     return str
 
+proc readCString(f: MemStream, length: uint32): string =
+    return f.readStr(length)
+
 
 proc read(f: MemStream, T: typedesc[GRVariable]): GRVariable =
     var varName = GRVariable()
@@ -38,25 +41,6 @@ proc readGRTable(f: MemStream, varName: GRVariable): GRDataType =
     result = dataTypeInfo
 
 
-proc readGRString(f: MemStream, varName: GRVariable, stringLoc: int64): GRDataType =
-    var dataTypeInfo = GRDataType(varName: varName, kind: String)
-    var loc: int64 = f.getPosition
-    if stringLoc == 0x0:
-        dataTypeInfo.location = stringLoc
-        dataTypeInfo.stringValue = ""
-    else:
-        f.setPosition(stringLoc)
-        dataTypeInfo.location = stringLoc
-        dataTypeInfo.stringValue = f.readCString
-    f.setPosition(loc + 0x4)
-    result = dataTypeInfo
-
-proc readGRBool(f: MemStream, varName: GRVariable): GRDataType =
-    var dataTypeInfo = GRDataType(varName: varName, kind: Boolean)
-    dataTypeInfo.location = f.getPosition
-    f.setPosition(4, sspCur)
-    result = dataTypeInfo
-
 proc readGRFloat(f: MemStream, varName: GRVariable): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: Float)
     dataTypeInfo.location = f.getPosition
@@ -69,12 +53,32 @@ proc readGRVector(f: MemStream, varName: GRVariable, vectorLoc: int64): GRDataTy
     f.setPosition(4, sspCur)
     result = dataTypeInfo
 
+proc readGRString(f: MemStream, varName: GRVariable, stringLoc: int64): GRDataType =
+    var dataTypeInfo = GRDataType(varName: varName, kind: String)
+    var loc: int64 = f.getPosition
+    var stringLength: uint32 = f.read(uint32)
+    if stringLoc == 0x0:
+        dataTypeInfo.location = stringLoc
+        dataTypeInfo.stringValue = ""
+    else:
+        f.setPosition(stringLoc)
+        dataTypeInfo.location = stringLoc
+        dataTypeInfo.stringValue = f.readCString(stringLength)
+    f.setPosition(loc + 0x4)
+    result = dataTypeInfo
+
+proc readGRBool(f: MemStream, varName: GRVariable): GRDataType =
+    var dataTypeInfo = GRDataType(varName: varName, kind: Boolean)
+    dataTypeInfo.location = f.getPosition
+    f.setPosition(4, sspCur)
+    result = dataTypeInfo
+
 import bitops
 proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
     var dataTypeInfo: GRDataType
     let varName: GRVariable = f.read(GRVariable)
-    let rawDataType: uint32 = f.read(uint32)
-    var dataType: uint32 = rawDataType
+    let rawDataType: uint32 = f.read(uint32) # 8
+    var dataType: uint32 = rawDataType 
     dataType.mask(0b111'u32)
     let dataLocation: int64 = cast[int64](rawDataType) shr 4
     if dataType == 0:
