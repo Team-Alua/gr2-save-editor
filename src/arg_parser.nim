@@ -1,5 +1,5 @@
 import parseopt
-import re
+import pkg/nregex
 import strutils
 from "./mod/types" as ModTypes import GRModOption, GRMod, GRModKind
 # -o, --online-items
@@ -24,7 +24,7 @@ proc parseArgs*(p: var OptParser): GRModOption =
   for kind, key, val in p.getopt():
     case kind:
     of cmdArgument:
-      if findBounds(key, re"data\d{4}\.bin$").first > -1:
+      if match(key, re"data\d{4}\.bin$"):
         opts.filename = key
     of cmdLongOption, cmdShortOption:
       case key:
