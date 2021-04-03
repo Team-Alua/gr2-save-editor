@@ -23,7 +23,7 @@ proc read(f: MemStream, T: typedesc[GRVariable]): GRVariable =
     result = varName
     f.setPosition(pos + 4)
     
-proc readGRList(f: MemStream, varName: GRVariable): GRDataType =
+proc readGRTable(f: MemStream, varName: GRVariable): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: List)
     var count = f.read(uint32)
     f.setPosition(4, sspCur)
@@ -76,14 +76,15 @@ proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
     let rawDataType: uint32 = f.read(uint32)
     var dataType: uint32 = rawDataType
     dataType.mask(0b111'u32)
+    let dataLocation: int64 = cast[int64](rawDataType) shr 4
     if dataType == 0:
-        dataTypeInfo = f.readGRList(varName)
+        dataTypeInfo = f.readGRTable(varName)
     elif dataType == 1:
         dataTypeInfo = f.readGRFloat(varName)
     elif dataType == 2:
-        dataTypeInfo = f.readGRVector(varName, cast[int64](rawDataType))
+        dataTypeInfo = f.readGRVector(varName, dataLocation)
     elif dataType == 3:
-        dataTypeInfo = f.readGRString(varName, cast[int64](rawDataType) shr 4)
+        dataTypeInfo = f.readGRString(varName, dataLocation)
         if varName.name == "playtime":
             echo "Playtime: ", dataTypeInfo.stringValue
     elif dataType == 4:
@@ -115,7 +116,6 @@ proc readGRSaveFile*(saveFileMem: MemStream): seq[GRDataType] =
 
     var data: seq[GRDataType] = newSeq[GRDataType]()
     var index: uint32 = 0
-
     while index < numOfData:
         try:
             data.add(saveFileMem.read(GRDataType))
