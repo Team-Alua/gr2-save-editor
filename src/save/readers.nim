@@ -103,17 +103,20 @@ proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
     result = dataTypeInfo
 
 
+import strutils
 proc readGRSaveFile*(saveFileMem: MemStream): seq[GRDataType] =
     # check magic number
-    if saveFileMem.peekStr(4) != "ggdL":
+    if saveFileMem.readStr(4) != "ggdL":
         echo "Invalid Magic Number"
         quit(-1)
-
-    saveFileMem.setPosition(0xC)
     saveFileMem.endian = littleEndian
-
+    var value : uint32 = saveFileMem.read(uint32)
+    if value != 0x1330689:
+        echo "Corrupted save file"
+        quit(-1)
+    var fileSizeInBytes: uint32 = saveFileMem.read(uint32)
     let numOfData: uint32 =  saveFileMem.read(uint32)
-
+    echo "Size: $1 bytes\nEntries: $2\n" % [$fileSizeInBytes, $numOfData]
     var data: seq[GRDataType] = newSeq[GRDataType]()
     var index: uint32 = 0
     while index < numOfData:
