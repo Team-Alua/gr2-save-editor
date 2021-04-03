@@ -9,11 +9,15 @@ from "./mod/types" as ModTypes import GRModOption, GRMod, GRModKind
 proc parseCostumeArg(costumeArgs: string, opts: var GRModOption): void =
   const costumeChoices = ["kit19", "kit04", "cro01", "cro06", "sac01", "oth01", "tkg05"]
   for costumeArg in costumeArgs.split(','):
-    var costIndex = costumeChoices.find(costumeArg)
-    if costIndex == -1:
-      echo "ignored costume choice: ", costumeArg
-      continue
-    opts.costumes[costIndex] = costumeChoices[costIndex]
+    if costumeArg == "All":
+      for index in 1..len(costumeChoices):
+        opts.costumes[index - 1] = costumeChoices[index - 1]
+    else:
+      var costIndex = costumeChoices.find(costumeArg)
+      if costIndex == -1:
+        echo "ignored costume choice: ", costumeArg
+        continue
+      opts.costumes[costIndex] = costumeChoices[costIndex]
  
 proc parseArgs*(p: var OptParser): GRModOption =
   var opts = GRModOption()
