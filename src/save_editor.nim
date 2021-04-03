@@ -102,7 +102,6 @@ if len(outfits) == 0:
     var fs = newFileStream(fileName, bigEndian, fmWrite)
     fs.write(saveFileMem, len(buffer))
     fs.close()
-    discard
 else:
     for outfit in outfits:
         if outfit.kind != GRModKind.String:
