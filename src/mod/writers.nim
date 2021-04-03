@@ -17,3 +17,4 @@ proc write*(f: MemStream, edit: GRMod, sections: seq[GRDataType]): void =
             f.write(vectorValue)
     of String:
         f.writeStr(edit.stringValue)
+        
