@@ -1,5 +1,4 @@
 import parseopt
-import pkg/nregex
 import strutils
 from "./mod/types" as ModTypes import GRModOption, GRMod, GRModKind
 # -o, --online-items
@@ -18,13 +17,24 @@ proc parseCostumeArg(costumeArgs: string, opts: var GRModOption): void =
         echo "ignored costume choice: ", costumeArg
         continue
       opts.costumes[costIndex] = costumeChoices[costIndex]
- 
+
+proc isValidSaveFile(fn: string): bool =
+  if fn.len < 12:
+    return false
+  var focusStr = fn.substr(fn.len - 12)
+  if focusStr[0..3] != "data":
+    return false
+  for index in 4..7:
+    if not focusStr[index].isDigit:
+      return false
+  return focusStr.endsWith(".bin")
+
 proc parseArgs*(p: var OptParser): GRModOption =
   var opts = GRModOption()
   for kind, key, val in p.getopt():
     case kind:
     of cmdArgument:
-      if contains(key, re"data\d{4}\.bin$"):
+      if isValidSaveFile(key):
         opts.filename = key
     of cmdLongOption, cmdShortOption:
       case key:
