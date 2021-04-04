@@ -27,7 +27,7 @@ proc findByName*(typeList: seq[GRDataType], name: string): GRDataType =
         raise e
 
 proc findByName*(dataType: GRDataType, name: string): GRDataType =
-    if dataType.kind != List:
+    if dataType.kind != Table:
         var e: ref ValueError
         new(e)
         e.msg = "Invalid type provided " 

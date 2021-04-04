@@ -4,7 +4,7 @@ type GRVariable* = object
     location*: int64
 
 type GRDataKind* = enum 
-    List
+    Table
     String
     Float
     Boolean
@@ -13,11 +13,11 @@ type GRDataKind* = enum
 
 proc str*(dataKind: GRDataKind): string = 
     case dataKind:
-    of List: result = "List"
-    of String: result = "String"
-    of Float: result = "Float"
-    of Boolean: result = "Boolean"
-    of Vector: result = "Vector"
+    of Table: result = "TABLE"
+    of String: result = "STRING"
+    of Float: result = "FLOAT"
+    of Boolean: result = "BOOL"
+    of Vector: result = "VECTOR"
     of Unknown: result = "unknown"
 
 
@@ -26,7 +26,7 @@ type GRDataType* = object
     processed*: uint32
     location*: int64
     case kind*: GRDataKind
-    of List:
+    of Table:
         items*: seq[GRDataType]
     of String:
         stringValue*: string
