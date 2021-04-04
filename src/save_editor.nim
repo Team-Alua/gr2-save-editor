@@ -10,10 +10,11 @@ import segfaults
 import "./arg_parser"
 import "./save/types"
 import "./save/readers"
-import "./helpers/writers"
-from "./mod/types" as ModTypes import GRModOption, GRMod, GRModKind
+import "./save/writers" as SaveWriters
+from "./helpers/writers" import write
+from "./mod/types" as ModTypes import GRModOption, GRModKind, GRMod
 from "./mod/edits" as ModEdits import newEdits, newOutFitEdits
-from "./mod/writers" as ModWriters import write
+import "./mod/writers" as ModWriters
 
 proc getHelp(): void =
     var fileName = splitPath(getAppFilename())[1]
@@ -85,13 +86,24 @@ var saveFileMem = newMemStream(buffer, bigEndian)
 var sections: seq[GRDataType] 
 sections = saveFileMem.readGRSaveFile
 
+var humanReadableFile = newMemStream(@[], bigEndian)
+
+humanReadableFile.writeReadable(sections)
+
+var fs = newFileStream("owo.txt", bigEndian , fmWrite)
+
+fs.write(humanReadableFile, len(humanReadableFile.data))
+
+fs.close()
+
+humanReadableFile.close()
+
+
 # generate the necessary edits for non costume types
 var edits: seq[GRMod] = newEdits(grModOpts)
 
 for edit in edits:
     saveFileMem.write(edit, sections)
-
-
 
 # generate necessary costume edits
 var outfits: seq[GRMod] = newOutFitEdits(grModOpts)
