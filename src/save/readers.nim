@@ -27,7 +27,7 @@ proc read(f: MemStream, T: typedesc[GRVariable]): GRVariable =
     f.setPosition(pos)
     
 proc readGRTable(f: MemStream, varName: var GRVariable): GRDataType =
-    var dataTypeInfo = GRDataType(varName: varName, kind: List)
+    var dataTypeInfo = GRDataType(varName: varName, kind: Table)
     var count = f.read(uint32)
     dataTypeInfo.varName.hash = f.read(uint32)
     var items: seq[GRDataType] = newSeq[GRDataType]()
