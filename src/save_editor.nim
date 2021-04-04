@@ -90,7 +90,7 @@ var humanReadableFile = newMemStream(@[], bigEndian)
 
 humanReadableFile.writeReadable(sections)
 
-var fs = newFileStream("owo.txt", bigEndian , fmWrite)
+var fs = newFileStream("save_export.txt", bigEndian , fmWrite)
 
 fs.write(humanReadableFile, len(humanReadableFile.data))
 
