@@ -5,10 +5,16 @@
 import parseopt
 import segfaults
 import "./arg/parser"
+import "./arg/help"
+import "./arg/type"
 import "./arg/validator"
 
 # parse arguments
 var args = initOptParser("")
 var opts = args.parseArgs
 
-validateArgs(opts)
+if not validateArgs(opts):
+    echo opts.err
+    getHelp()
+    quit(-1)
+

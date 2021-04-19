@@ -6,6 +6,7 @@ type Cmd* = enum
 
 type SaveOptions* = object
   cmd*: Cmd
+  err*: string
   cmdName*: string
   sourceFile*: string
   destinationFile*: string

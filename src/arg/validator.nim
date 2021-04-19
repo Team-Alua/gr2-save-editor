@@ -1,5 +1,4 @@
 import "./type" 
-import "./help"
 import strutils
 
 proc isValidSaveFileName(saveFileName: string): bool =
@@ -32,7 +31,7 @@ proc validateTxt2Bin*(opts: SaveOptions): string =
         err.add("Destination file \"$1\" is not of format dataXXXX.bin" % opts.destinationFile) 
     return err.join("\n")
 
-proc validateArgs*(opts: SaveOptions): void =
+proc validateArgs*(opts: var SaveOptions): bool =
     var err: string = ""
     case opts.cmd:
         of Bin2Txt:
@@ -41,7 +40,5 @@ proc validateArgs*(opts: SaveOptions): void =
             err = validateTxt2Bin(opts)
         of Invalid:
             err = "%s is not a valid command type." % opts.cmdName
-    if err.len > 0:
-        echo err
-        getHelp()
-        quit(-1)
+    opts.err = err    
+    return err.len == 0
