@@ -1,7 +1,6 @@
 type GRVariable* = object
     name*: string
     hash*: uint32 # uses fnv1a32
-    location*: int64
 
 type GRDataKind* = enum 
     Table
@@ -24,7 +23,6 @@ proc str*(dataKind: GRDataKind): string =
 type GRDataType* = object
     varName*: GRVariable
     processed*: uint32
-    location*: int64
     case kind*: GRDataKind
     of Table:
         items*: seq[GRDataType]

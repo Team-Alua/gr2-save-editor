@@ -20,7 +20,7 @@ proc read(f: MemStream, T: typedesc[GRVariable]): GRVariable =
     var varName = GRVariable()
     var nameOffset: uint32 = f.read(uint32)
     let pos: int64 = f.getPosition()
-    varName.location = cast[int64](nameOffset)
+    # varName.location = cast[int64](nameOffset)
     f.setPosition(cast[int64](nameOffset))
     varName.name = f.readCString
     result = varName
@@ -43,7 +43,7 @@ proc readGRTable(f: MemStream, varName: var GRVariable): GRDataType =
 
 proc readGRFloat(f: MemStream, varName: GRVariable): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: Float, processed: 1)
-    dataTypeInfo.location = f.getPosition
+    # dataTypeInfo.location = f.getPosition
     dataTypeInfo.floatValue = f.read(float32)
     dataTypeInfo.varName.hash = f.read(uint32)
     result = dataTypeInfo
@@ -51,7 +51,7 @@ proc readGRFloat(f: MemStream, varName: GRVariable): GRDataType =
 import system
 proc readGRVector(f: MemStream, varName: GRVariable, vectorLoc: int64): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: Vector, processed: 1)
-    dataTypeInfo.location = vectorLoc
+    # dataTypeInfo.location = vectorLoc
     let vectorSize = f.read(uint32)
     dataTypeInfo.varName.hash = f.read(uint32)
     let pos = f.getPosition() 
@@ -68,18 +68,18 @@ proc readGRString(f: MemStream, varName: GRVariable, stringLoc: int64): GRDataTy
     dataTypeInfo.varName.hash = f.read(uint32)
     var loc: int64 = f.getPosition
     if stringLoc == 0x0:
-        dataTypeInfo.location = stringLoc
+        # dataTypeInfo.location = stringLoc
         dataTypeInfo.stringValue = ""
     else:
         f.setPosition(stringLoc)
-        dataTypeInfo.location = stringLoc
+        # dataTypeInfo.location = stringLoc
         dataTypeInfo.stringValue = f.readCString(stringLength)
     f.setPosition(loc)
     result = dataTypeInfo
 
 proc readGRBool(f: MemStream, varName: GRVariable): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: Boolean, processed: 1)
-    dataTypeInfo.location = f.getPosition
+    # dataTypeInfo.location = f.getPosition
     dataTypeInfo.boolValue = f.read(uint32) > 0
     dataTypeInfo.varName.hash = f.read(uint32)
     result = dataTypeInfo
