@@ -24,6 +24,7 @@ case opts.cmd:
     of Bin2Txt:
         bin2txt(opts)
     of Txt2Bin:
+        
         discard
     of Invalid:
         discard

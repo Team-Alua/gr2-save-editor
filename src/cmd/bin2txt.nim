@@ -15,9 +15,10 @@ proc bin2txt*(opts: SaveOptions): void =
     # parse gravity rush 2 save file
     var sections: seq[GRDataType] 
     sections = saveFileMem.readGRSaveFile
-
     var humanReadableFile = newMemStream(@[], bigEndian)
-
+    humanReadableFile.write(0xEF'u8)
+    humanReadableFile.write(0xBB'u8)
+    humanReadableFile.write(0xBF'u8)
     humanReadableFile.writeReadable(sections)
     var fs = newFileStream(opts.destinationFile, bigEndian , fmWrite)
     fs.write(humanReadableFile, len(humanReadableFile.data))

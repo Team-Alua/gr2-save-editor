@@ -15,7 +15,7 @@ proc str*(dataKind: GRDataKind): string =
     of Table: result = "TABLE"
     of String: result = "STRING"
     of Float: result = "FLOAT"
-    of Boolean: result = "BOOL"
+    of Boolean: result = "BOOLEAN"
     of Vector: result = "VECTOR"
     of Unknown: result = "unknown"
 

@@ -1,4 +1,5 @@
 import binstreams
+import bitops
 import ./types
 
 proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType
@@ -77,21 +78,31 @@ proc readGRString(f: MemStream, varName: GRVariable, stringLoc: int64): GRDataTy
     f.setPosition(loc)
     result = dataTypeInfo
 
+import strutils
 proc readGRBool(f: MemStream, varName: GRVariable): GRDataType =
     var dataTypeInfo = GRDataType(varName: varName, kind: Boolean, processed: 1)
     # dataTypeInfo.location = f.getPosition
-    dataTypeInfo.boolValue = f.read(uint32) > 0
+    # echo (f.peek(uint32) mod 0xF)
+    # echo (f.peek(uint32) shr 4)
+    var boolValue = f.read(uint32)
+    var oldValue = boolValue;
+    boolValue.mask(0xFF'u32)
+    if boolValue >= 2:
+        echo varName.name, "value:", oldValue;
+    dataTypeInfo.boolValue = boolValue > 0
     dataTypeInfo.varName.hash = f.read(uint32)
     result = dataTypeInfo
 
-import bitops
+
 proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
     var dataTypeInfo: GRDataType
     var varName: GRVariable = f.read(GRVariable)
-    let rawDataType: uint32 = f.read(uint32) # 8
+    let rawDataType: uint32 = f.read(uint32)
     var dataType: uint32 = rawDataType
     dataType.mask(0b111'u32)
+
     let dataLocation: int64 = cast[int64](rawDataType) shr 4
+    
     if dataType == 0:
         dataTypeInfo = f.readGRTable(varName)
     elif dataType == 1:
@@ -117,7 +128,8 @@ proc read*(f: MemStream, T: typedesc[GRDataType]): GRDataType =
 import strutils
 proc readGRSaveFile*(saveFileMem: MemStream): seq[GRDataType] =
     # check magic number
-    if saveFileMem.readStr(4) != "ggdL":
+    var magicNumber = saveFileMem.readStr(4);
+    if magicNumber != "ggdL":
         echo "Invalid Magic Number"
         quit(-1)
     saveFileMem.endian = littleEndian

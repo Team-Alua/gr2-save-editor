@@ -1,0 +1,20 @@
+0: ggdL 
+littleEndian
+4: 0x1330689 (uint32) => some constant
+8: fileSizeInBytes (uint32)
+12: numOfData (uint32)
+
+Starting at 16:
+EntryFormat:
+x: variableNameOffset (uint32)
+
+DataType = XXXXXXXXXXXXXXXXXXXXXXXXXXXX1YYY
+Xs => extra info
+Y => dataType
+
+If DataType == 8: # TABLE
+x + 4: numberOfEntries
+x + 8: varNameHash
+x + 12: Start of items array
+else if DataType === 0xC: # BOOL
+	x: 1 byte
